@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "intel_agp" >> /etc/initramfs-tools/modules
+echo "drm" >> /etc/initramfs-tools/modules
+echo "i915 modeset=1" >> /etc/initramfs-tools/modules

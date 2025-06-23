@@ -1,0 +1,190 @@
+From c348f01f5e70bd7b540774fe06eb2e2aa204264d Mon Sep 17 00:00:00 2001
+From: Sanchayan Maity <sanchayan@asymptotic.io>
+Date: Thu, 12 Nov 2020 20:03:11 +0530
+Subject: [PATCH 1/7] fdkaac: Add support for LATM
+
+ISO/IEC 14496-3 (MPEG-4 Audio) defines the LATM/LOAS mechanism to transport
+streams without using ISO/IEC 14496-1 (MPEG-4 Systems) for audio only
+applications. The transport mechanism uses a two-layer approach, namely a
+multiplex layer and a synchronization layer. The multiplex layer viz.
+(Low-overhead MPEG-4 Audio Transport Multiplex: LATM) manages multiplexing
+of several MPEG-4 Audio payloads and their AudioSpecificConfig elements.
+LATM might be considered as LOAS without the synchronization layer.
+
+As per the spec, the multiplexed element viz. AudioMuxElement without
+synchronization shall only be used for transmission channels where the
+underlying transport layer already provides frame synchronization. An
+example case is using AAC with bluetooth.
+
+LATM MCP1 encoded data can be payloaded in RTP for sending the AAC
+stream via bluetooth.
+
+For details on bitstream, see the Fraunhofer IIS Application Bulletin on
+AAC transport formats.
+https://www.iis.fraunhofer.de/content/dam/iis/de/doc/ame/wp/FraunhoferIIS_Application-Bulletin_AAC-Transport-Formats.pdf
+
+Note that muxConfigPresent needs to be set at the application layer and
+signals whether the configuration is sent within or outside the stream.
+This cannot be determined by parsing the bitstream. We introduce two
+different stream formats to be able to distinguish between the MCP0 and
+MCP1 case, viz. latm-mcp0/1.
+---
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacdec.c | 17 ++++-
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.c | 67 ++++++++++++++++++-
+ 2 files changed, 79 insertions(+), 5 deletions(-)
+
+diff --git a/ext/fdkaac/gstfdkaacdec.c b/ext/fdkaac/gstfdkaacdec.c
+index 723f970f21..ed060a908c 100644
+--- a/ext/fdkaac/gstfdkaacdec.c
++++ b/ext/fdkaac/gstfdkaacdec.c
+@@ -44,7 +44,11 @@ static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink",
+     GST_PAD_ALWAYS,
+     GST_STATIC_CAPS ("audio/mpeg, "
+         "mpegversion = (int) {2, 4}, "
+-        "stream-format = (string) { adts, adif, raw }, " CHANNELS_CAPS_STR)
++        "stream-format = (string) { adts, adif, raw }, "
++        CHANNELS_CAPS_STR ";  "
++        "audio/mpeg, "
++        "mpegversion = (int) 4, "
++        "stream-format = (string) { latm-mcp0, latm-mcp1 }, " CHANNELS_CAPS_STR)
+     );
+ 
+ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
+@@ -122,6 +126,10 @@ gst_fdkaacdec_set_format (GstAudioDecoder * dec, GstCaps * caps)
+     transport_format = TT_MP4_ADIF;
+   } else if (strcmp (stream_format, "adts") == 0) {
+     transport_format = TT_MP4_ADTS;
++  } else if (strcmp (stream_format, "latm-mcp0") == 0) {
++    transport_format = TT_MP4_LATM_MCP0;
++  } else if (strcmp (stream_format, "latm-mcp1") == 0) {
++    transport_format = TT_MP4_LATM_MCP1;
+   } else {
+     g_assert_not_reached ();
+   }
+@@ -132,7 +140,12 @@ gst_fdkaacdec_set_format (GstAudioDecoder * dec, GstCaps * caps)
+     return FALSE;
+   }
+ 
+-  if (transport_format == TT_MP4_RAW) {
++  /*
++   * If out of band config data either AudioSpecificConfig or StreamMuxConfig
++   * is applicable with raw or LATM MCP0 respectively, aacDecoder_ConfigRaw
++   * must be called with this data before beginning the decoding process.
++   */
++  if (transport_format == TT_MP4_RAW || transport_format == TT_MP4_LATM_MCP0) {
+     GstBuffer *codec_data = NULL;
+     GstMapInfo map;
+     guint8 *data;
+diff --git a/ext/fdkaac/gstfdkaacenc.c b/ext/fdkaac/gstfdkaacenc.c
+index df05be2380..437a4f4e8b 100644
+--- a/ext/fdkaac/gstfdkaacenc.c
++++ b/ext/fdkaac/gstfdkaacenc.c
+@@ -24,6 +24,7 @@
+ #include "gstfdkaac.h"
+ #include "gstfdkaacenc.h"
+ 
++#include <gst/base/gstbitwriter.h>
+ #include <gst/pbutils/pbutils.h>
+ 
+ #include <string.h>
+@@ -73,7 +74,7 @@ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
+         "mpegversion = (int) 4, "
+         "rate = (int) { " SAMPLE_RATES " }, "
+         "channels = (int) {1, 2, 3, 4, 5, 6, 8}, "
+-        "stream-format = (string) { adts, adif, raw }, "
++        "stream-format = (string) { adts, adif, raw, latm-mcp0, latm-mcp1 }, "
+         "base-profile = (string) lc, " "framed = (boolean) true")
+     );
+ 
+@@ -204,6 +205,7 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+   CHANNEL_MODE channel_mode;
+   AACENC_InfoStruct enc_info = { 0 };
+   gint bitrate;
++  guint8 audio_spec_conf[2] = { 0 };
+ 
+   if (self->enc && !self->is_drained) {
+     /* drain */
+@@ -230,6 +232,20 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+       } else if (strcmp (str, "raw") == 0) {
+         GST_DEBUG_OBJECT (self, "use RAW format for output");
+         transmux = 0;
++      } else if (strcmp (str, "latm-mcp1") == 0) {
++        /*
++         * Enable TT_MP4_LATM_MCP1. Sets muxConfigPresent = 1. See Section 4.1 of
++         * RFC 3016.
++         */
++        GST_DEBUG_OBJECT (self, "use LATM MCP1 format for output");
++        transmux = 6;
++      } else if (strcmp (str, "latm-mcp0") == 0) {
++        /*
++         * Enable TT_MP4_LATM_MCP0. Sets muxConfigPresent = 0. See Section 4.1 of
++         * RFC 3016.
++         */
++        GST_DEBUG_OBJECT (self, "use LATM MCP0 format for output");
++        transmux = 7;
+       }
+     }
+ 
+@@ -408,12 +424,57 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+   } else if (transmux == 2) {
+     gst_caps_set_simple (src_caps, "stream-format", G_TYPE_STRING, "adts",
+         NULL);
++  } else if (transmux == 6 || transmux == 7) {
++    GstBitWriter bw;
++    guint rate = GST_AUDIO_INFO_RATE (info);
++    guint8 channels = GST_AUDIO_INFO_CHANNELS (info);
++    GstBuffer *codec_data;
++
++    /*
++     * Craft a AudioSpecificConfig manually to be used for setting level and
++     * profile later as when LATM_MCP0/1 is enabled enc_info.confBuf won't have
++     * AudioSpecificConfig but StreamMuxConfig. Since gst_codec_utils expects
++     * an AudioSpecificConfig to retrieve aot, rate and channel config
++     * information, it will fail. We pass this manually constructed
++     * AudioSpecificConfig when LATM is requested.
++     */
++    gst_bit_writer_init_with_data (&bw, audio_spec_conf,
++        sizeof (audio_spec_conf), FALSE);
++    gst_bit_writer_put_bits_uint8 (&bw, 2 /* AOT_AAC_LC */ , 5);
++    gst_bit_writer_put_bits_uint8 (&bw,
++        gst_codec_utils_aac_get_index_from_sample_rate (rate), 4);
++    gst_bit_writer_put_bits_uint8 (&bw, channels, 4);
++
++    codec_data =
++        gst_buffer_new_wrapped (g_memdup (enc_info.confBuf, enc_info.confSize),
++        enc_info.confSize);
++    /*
++     * For MCP0 the config is out of band, so set codec_data to
++     * StreamMuxConfig. For MCP1, the config is in band and need not be send
++     * via any out of band means like codec_data.
++     */
++    if (transmux == 6)
++      gst_caps_set_simple (src_caps, "stream-format", G_TYPE_STRING,
++          "latm-mcp1", NULL);
++    else
++      gst_caps_set_simple (src_caps, "codec_data", GST_TYPE_BUFFER, codec_data,
++          "stream-format", G_TYPE_STRING, "latm-mcp0", NULL);
++    gst_buffer_unref (codec_data);
+   } else {
+     g_assert_not_reached ();
+   }
+ 
+-  gst_codec_utils_aac_caps_set_level_and_profile (src_caps, enc_info.confBuf,
+-      enc_info.confSize);
++  if (transmux != 6 && transmux != 7)
++    gst_codec_utils_aac_caps_set_level_and_profile (src_caps,
++        enc_info.confBuf, enc_info.confSize);
++  else
++    /*
++     * For LATM, confBuf is StreamMuxConfig and not AudioSpecificConfig.
++     * In this case, pass in the manually constructed AudioSpecificConfig
++     * buffer above.
++     */
++    gst_codec_utils_aac_caps_set_level_and_profile (src_caps, audio_spec_conf,
++        sizeof (audio_spec_conf));
+ 
+   ret = gst_audio_encoder_set_output_format (enc, src_caps);
+   gst_caps_unref (src_caps);
+-- 
+2.34.1
+

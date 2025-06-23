@@ -1,0 +1,48 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
+
+include /usr/share/dpkg/architecture.mk
+include /usr/share/dpkg/buildflags.mk
+
+EXTRA_CMAKE_ARGUMENTS = -DPORT=WPE \
+	-DCMAKE_INSTALL_LIBEXECDIR=lib/$(DEB_HOST_MULTIARCH) \
+	-DCMAKE_C_FLAGS_RELEASE="" \
+	-DCMAKE_C_FLAGS_DEBUG="" \
+	-DCMAKE_CXX_FLAGS_RELEASE="" \
+	-DCMAKE_CXX_FLAGS_DEBUG="" \
+	-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DENABLE_COG=OFF \
+	-DENABLE_DOCUMENTATION=OFF \
+	-DENABLE_INTROSPECTION=OFF \
+	-DENABLE_WEBDRIVER=OFF \
+	-DENABLE_WPE_PLATFORM=ON \
+	-DENABLE_WPE_PLATFORM_WAYLAND=ON \
+	-DENABLE_WPE_QT_API=OFF \
+	-DUSE_LIBBACKTRACE=OFF \
+	-DUSE_SYSPROF_CAPTURE=OFF \
+	-DENABLE_MINIBROWSER=ON \
+	-DBWRAP_EXECUTABLE=/usr/bin/bwrap \
+	-DDBUS_PROXY_EXECUTABLE=/usr/bin/xdg-dbus-proxy
+
+CFLAGS := $(CFLAGS:-g=-g1)
+CPPFLAGS := $(CPPFLAGS:-g=-g1)
+CXXFLAGS := $(CXXFLAGS:-g=-g1)
+
+LDFLAGS += -Wl,--reduce-memory-overheads
+
+%:
+	dh $@ --buildsystem=cmake+ninja
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(EXTRA_CMAKE_ARGUMENTS)
+
+override_dh_auto_clean: debian/control
+	dh_auto_clean
+	find Source Tools -type f -name "*.pyc" -exec rm {} \;
+	find Source Tools -depth -type d -name __pycache__ -exec rmdir {} \;
+
+override_dh_auto_test:
+
+override_dh_dwz:

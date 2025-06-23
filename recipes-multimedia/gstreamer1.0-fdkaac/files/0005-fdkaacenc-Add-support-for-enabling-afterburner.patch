@@ -1,0 +1,107 @@
+From ac0c5a55613dfe8f987e9b445ecff0bd95a23d4d Mon Sep 17 00:00:00 2001
+From: Sanchayan Maity <sanchayan@asymptotic.io>
+Date: Sat, 23 Jan 2021 18:35:12 +0530
+Subject: [PATCH 5/7] fdkaacenc: Add support for enabling afterburner
+
+This is an additional quality parameter. In the default configuration this
+quality switch is deactivated because it would cause a workload increase
+which might be significant. If workload is not an issue in the application
+it can be recommended to activate this feature.
+---
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.c | 26 ++++++++++++++++++-
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.h |  1 +
+ 2 files changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/ext/fdkaac/gstfdkaacenc.c b/ext/fdkaac/gstfdkaacenc.c
+index 95167c1e7d..7c8372e3b5 100644
+--- a/ext/fdkaac/gstfdkaacenc.c
++++ b/ext/fdkaac/gstfdkaacenc.c
+@@ -31,13 +31,14 @@
+ 
+ /* TODO:
+  * - Add support for other AOT / profiles
+- * - Expose more properties, e.g. afterburner and vbr
++ * - Expose more properties, e.g. vbr
+  * - Signal encoder delay
+  */
+ 
+ enum
+ {
+   PROP_0,
++  PROP_AFTERBURNER,
+   PROP_BITRATE,
+   PROP_HEADER_PERIOD
+ };
+@@ -112,6 +113,9 @@ gst_fdkaacenc_set_property (GObject * object, guint prop_id,
+     case PROP_HEADER_PERIOD:
+       self->header_period = g_value_get_uint (value);
+       break;
++    case PROP_AFTERBURNER:
++      self->afterburner = g_value_get_boolean (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -132,6 +136,9 @@ gst_fdkaacenc_get_property (GObject * object, guint prop_id,
+     case PROP_HEADER_PERIOD:
+       g_value_set_uint (value, self->header_period);
+       break;
++    case PROP_AFTERBURNER:
++      g_value_set_boolean (value, self->afterburner);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -404,6 +411,17 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+     return FALSE;
+   }
+ 
++  if (self->afterburner) {
++    if ((err =
++            aacEncoder_SetParam (self->enc, AACENC_AFTERBURNER,
++                1)) != AACENC_OK) {
++      GST_ERROR_OBJECT (self, "Could not enable afterburner: %d", err);
++      return FALSE;
++    }
++
++    GST_INFO_OBJECT (self, "Afteburner enabled");
++  }
++
+   if ((err = aacEncEncode (self->enc, NULL, NULL, NULL, NULL)) != AACENC_OK) {
+     GST_ERROR_OBJECT (self, "Unable to initialize encoder: %d", err);
+     return FALSE;
+@@ -632,6 +650,7 @@ gst_fdkaacenc_init (GstFdkAacEnc * self)
+    * TT_MP4_LATM_MCP1 otherwise 0.
+    */
+   self->header_period = 255;
++  self->afterburner = FALSE;
+ 
+   gst_audio_encoder_set_drainable (GST_AUDIO_ENCODER (self), TRUE);
+ }
+@@ -667,6 +686,11 @@ gst_fdkaacenc_class_init (GstFdkAacEncClass * klass)
+           0, 255, 255 /* auto-mode */ ,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
++  g_object_class_install_property (object_class, PROP_AFTERBURNER,
++      g_param_spec_boolean ("afterburner", "Afterburner - Quality Parameter",
++          "Additional quality control parameter. Can cause workload increase.",
++          FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
+   gst_element_class_add_static_pad_template (element_class, &sink_template);
+   gst_element_class_add_static_pad_template (element_class, &src_template);
+ 
+diff --git a/ext/fdkaac/gstfdkaacenc.h b/ext/fdkaac/gstfdkaacenc.h
+index 0ddf1a5981..1da85b8891 100644
+--- a/ext/fdkaac/gstfdkaacenc.h
++++ b/ext/fdkaac/gstfdkaacenc.h
+@@ -53,6 +53,7 @@ struct _GstFdkAacEnc {
+   gboolean is_drained;
+ 
+   guint header_period;
++  gboolean afterburner;
+ };
+ 
+ struct _GstFdkAacEncClass {
+-- 
+2.34.1
+

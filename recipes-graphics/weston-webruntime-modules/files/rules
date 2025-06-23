@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+    -DCMAKE_BUILD_TYPE=Release
+
+override_dh_install:
+	install -d debian/weston-webruntime-modules/usr/share/weston
+	install -m 0644 assets/*.png debian/weston-webruntime-modules/usr/share/weston/
+
+	dh_install

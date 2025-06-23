@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/default.mk
+
+export HOME=$(CURDIR)/fake-home
+
+# debian package version
+version=$(shell dpkg-parsechangelog | grep ^Version: | cut -d ' ' -f 2)
+# upstream version
+gst_version=$(shell echo $(version) | cut -d '-' -f 1)
+
+CFLAGS += -Wno-error
+CXXFLAGS += -Wno-error
+LDFLAGS += -Wl,-z,defs -Wl,-O1 -Wl,--as-needed
+
+# Let's decide the package name and url depending on the distribution
+DISTRO = "$(shell dpkg-vendor --query vendor)"
+
+GST_PACKAGE_NAME := "GStreamer Bad Plugins (unknown Debian derivative)"
+GST_PACKAGE_ORIGIN="http://packages.qa.debian.org/gst-plugins-bad1.0-contrib"
+
+ifeq ($(DISTRO),"Debian")
+GST_PACKAGE_NAME := "GStreamer Bad Plugins (Debian)"
+GST_PACKAGE_ORIGIN="http://packages.qa.debian.org/gst-plugins-bad1.0-contrib"
+endif
+
+conf_flags = --libdir=lib/$(DEB_HOST_MULTIARCH) --libexecdir=lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0
+conf_flags += -Dpackage-name=$(GST_PACKAGE_NAME) -Dpackage-origin=$(GST_PACKAGE_ORIGIN)
+conf_flags += --auto-features=disabled
+
+ifneq (,$(filter amd64 arm64 armel armhf i386 mips64el mipsel ppc64el s390x,$(DEB_HOST_ARCH)))
+conf_flags += -Dfdkaac=enabled
+endif
+
+%:
+	dh $@ --buildsystem=meson
+
+override_dh_auto_configure:
+	dh_auto_configure -- --default-library shared $(conf_flags)
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/tmp
+
+override_dh_auto_test:
+
+# We are only installing the fdkaac module for now
+override_dh_missing:

@@ -1,0 +1,5 @@
+header:
+  version: 14
+
+machine: intel-nuc
+

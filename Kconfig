@@ -1,0 +1,74 @@
+mainmenu "Debian Webruntime Images"
+
+config KAS_INCLUDE_MAIN
+  string
+  default "kas/kas-webruntime.yml"
+
+config KAS_BUILD_SYSTEM
+  string
+  default "isar"
+
+config ARCH_AMD64
+  bool
+
+config ARCH_ARM64
+	bool
+
+choice
+  prompt "Target board"
+  default TARGET_X86_UEFI
+
+config TARGET_X86_UEFI
+  bool "Generic x86 machine booting via UEFI"
+  select ARCH_AMD64
+
+config TARGET_INTEL_NUC
+  bool "Intel NUC (NUC8i7BEH)"
+  select ARCH_AMD64
+
+config TARGET_RPI_5
+  bool "Raspberry Pi 5"
+  select ARCH_ARM64
+
+
+endchoice
+
+config KAS_INCLUDE_BOARD
+  string
+  default "kas/board/x86-uefi.yml" if TARGET_X86_UEFI
+  default "kas/board/intel-nuc.yml" if TARGET_INTEL_NUC
+  default "kas/board/rpi5.yml" if TARGET_RPI_5
+
+comment "Debian distribution options"
+
+choice
+  prompt "Debian Release"
+  default DEBIAN_BOOKWORM
+
+config DEBIAN_BOOKWORM
+  bool "Bookworm (12)"
+
+endchoice
+
+config KAS_INCLUDE_DEBIAN
+  string
+  default "kas/opt/debian12.yml" if DEBIAN_BOOKWORM && !TARGET_RPI_5
+  default "kas/opt/raspios-debian12.yml" if DEBIAN_BOOKWORM && TARGET_RPI_5
+
+comment "Webruntime type options"
+
+choice
+  prompt "Webengine type"
+  default WEBRUNTIME_WPEWEBKIT
+
+config WEBRUNTIME_WPEWEBKIT
+  bool "WPEWebKit"
+  help
+    WPEWebKit based webruntime.
+
+endchoice
+
+config KAS_INCLUDE_WEBRUNTIME
+  string
+  default "kas-wpewebkit.yml" if WEBRUNTIME_WPEWEBKIT
+
