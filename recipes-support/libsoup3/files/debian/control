@@ -1,0 +1,95 @@
+Source: libsoup3
+Section: devel
+Priority: optional
+Maintainer: Jani Hautakangas <jani@kodegood.com>
+Build-Depends: debhelper-compat (= 13),
+               glib-networking,
+               libbrotli-dev,
+               libglib2.0-dev (>= 2.70),
+               libgnutls28-dev,
+               libkrb5-dev,
+               libnghttp2-dev,
+               libpsl-dev,
+               libsqlite3-dev,
+               meson,
+               winbind
+Standards-Version: 4.7.0
+Homepage: https://libsoup.gnome.org/libsoup-3.0/index.html
+Rules-Requires-Root: no
+
+Package: libsoup-3.0-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libbrotli-dev,
+         libglib2.0-dev (>= 2.70),
+         libkrb5-dev,
+         libnghttp2-dev,
+         libpsl-dev,
+         libsoup-3.0-0 (= ${binary:Version}),
+         libsqlite3-dev,
+         zlib1g-dev,
+         ${misc:Depends}
+Description: HTTP library implementation in C -- Development files
+ It was originally part of a SOAP (Simple Object Access Protocol)
+ implementation called Soup, but the SOAP and non-SOAP parts have now been
+ split into separate packages.
+ .
+ libsoup uses the Glib main loop and is designed to work well with GTK+
+ applications. This enables GNOME applications to access HTTP servers
+ on the network in a completely asynchronous fashion, very similar to
+ the GTK+ programming model (a synchronous operation mode is also
+ supported for those who want it).
+ .
+ Features:
+  * Both asynchronous (GMainLoop and callback-based) and synchronous APIs
+  * Automatically caches connections
+  * SSL Support using GnuTLS
+  * Proxy support, including authentication and SSL tunneling
+  * Client support for Digest, NTLM, and Basic authentication
+  * Server support for Digest and Basic authentication
+  * Basic client-side SOAP support
+ .
+ This package contains the development files.
+
+Package: libsoup-3.0-0
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: glib-networking,
+         libsoup-3.0-common,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: HTTP library implementation in C -- Shared library
+ It was originally part of a SOAP (Simple Object Access Protocol)
+ implementation called Soup, but the SOAP and non-SOAP parts have now been
+ split into separate packages.
+ .
+ libsoup uses the Glib main loop and is designed to work well with GTK+
+ applications.  This enables GNOME applications to access HTTP servers
+ on the network in a completely asynchronous fashion, very similar to
+ the GTK+ programming model (a synchronous operation mode is also
+ supported for those who want it).
+ .
+ Features:
+  * Both asynchronous (GMainLoop and callback-based) and synchronous APIs
+  * Automatically caches connections
+  * SSL Support using GnuTLS
+  * Proxy support, including authentication and SSL tunneling
+  * Client support for Digest, NTLM, and Basic authentication
+  * Server support for Digest and Basic authentication
+  * Basic client-side SOAP support
+ .
+ This package contains the shared library.
+
+Package: libsoup-3.0-common
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: HTTP library implementation in C -- Common files
+ It was originally part of a SOAP (Simple Object Access Protocol)
+ implementation called Soup, but the SOAP and non-SOAP parts have now been
+ split into separate packages.
+ .
+ This package contains architecture-independent files such as translations.
+

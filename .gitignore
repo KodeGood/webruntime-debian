@@ -1,0 +1,4 @@
+build/
+isar/
+.config.yaml*
+.kas_shell_history

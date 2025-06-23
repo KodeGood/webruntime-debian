@@ -1,0 +1,102 @@
+From b205b62653911ef766198a00a16bb3edb77760f8 Mon Sep 17 00:00:00 2001
+From: Sanchayan Maity <sanchayan@asymptotic.io>
+Date: Sat, 23 Jan 2021 18:12:39 +0530
+Subject: [PATCH 4/7] fdkaacenc: Add support for setting header period
+
+Header period is frame count period for sending in-band configuration buffers
+within LATM/LOAS transport layer. Additionally this parameter configures the
+Program Config Element (PCE) repetition period in raw data block.
+---
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.c | 27 ++++++++++++++++++-
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.h |  2 ++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/ext/fdkaac/gstfdkaacenc.c b/ext/fdkaac/gstfdkaacenc.c
+index 4865ed1bf0..95167c1e7d 100644
+--- a/ext/fdkaac/gstfdkaacenc.c
++++ b/ext/fdkaac/gstfdkaacenc.c
+@@ -38,7 +38,8 @@
+ enum
+ {
+   PROP_0,
+-  PROP_BITRATE
++  PROP_BITRATE,
++  PROP_HEADER_PERIOD
+ };
+ 
+ #define DEFAULT_BITRATE (0)
+@@ -108,6 +109,9 @@ gst_fdkaacenc_set_property (GObject * object, guint prop_id,
+     case PROP_BITRATE:
+       self->bitrate = g_value_get_int (value);
+       break;
++    case PROP_HEADER_PERIOD:
++      self->header_period = g_value_get_uint (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -125,6 +129,9 @@ gst_fdkaacenc_get_property (GObject * object, guint prop_id,
+     case PROP_BITRATE:
+       g_value_set_int (value, self->bitrate);
+       break;
++    case PROP_HEADER_PERIOD:
++      g_value_set_uint (value, self->header_period);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -390,6 +397,13 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+     return FALSE;
+   }
+ 
++  if ((err =
++          aacEncoder_SetParam (self->enc, AACENC_HEADER_PERIOD,
++              self->header_period)) != AACENC_OK) {
++    GST_ERROR_OBJECT (self, "Unable to set header period: %d", err);
++    return FALSE;
++  }
++
+   if ((err = aacEncEncode (self->enc, NULL, NULL, NULL, NULL)) != AACENC_OK) {
+     GST_ERROR_OBJECT (self, "Unable to initialize encoder: %d", err);
+     return FALSE;
+@@ -613,6 +627,11 @@ gst_fdkaacenc_init (GstFdkAacEnc * self)
+   self->bitrate = DEFAULT_BITRATE;
+   self->enc = NULL;
+   self->is_drained = TRUE;
++  /*
++   * 0xFF: auto-mode. Default 10 for TT_MP4_ADTS, TT_MP4_LOAS and
++   * TT_MP4_LATM_MCP1 otherwise 0.
++   */
++  self->header_period = 255;
+ 
+   gst_audio_encoder_set_drainable (GST_AUDIO_ENCODER (self), TRUE);
+ }
+@@ -642,6 +661,12 @@ gst_fdkaacenc_class_init (GstFdkAacEncClass * klass)
+           0, G_MAXINT, DEFAULT_BITRATE,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
++  g_object_class_install_property (object_class, PROP_HEADER_PERIOD,
++      g_param_spec_uint ("header-period", "Frame count period",
++          "Frame count period for sending in-band configuration buffers",
++          0, 255, 255 /* auto-mode */ ,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
+   gst_element_class_add_static_pad_template (element_class, &sink_template);
+   gst_element_class_add_static_pad_template (element_class, &src_template);
+ 
+diff --git a/ext/fdkaac/gstfdkaacenc.h b/ext/fdkaac/gstfdkaacenc.h
+index 997f6037eb..0ddf1a5981 100644
+--- a/ext/fdkaac/gstfdkaacenc.h
++++ b/ext/fdkaac/gstfdkaacenc.h
+@@ -51,6 +51,8 @@ struct _GstFdkAacEnc {
+   gboolean need_reorder;
+   const GstAudioChannelPosition *aac_positions;
+   gboolean is_drained;
++
++  guint header_period;
+ };
+ 
+ struct _GstFdkAacEncClass {
+-- 
+2.34.1
+

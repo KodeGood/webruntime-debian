@@ -1,0 +1,104 @@
+From 625d89cf0fe2d18463a94c0df823253b256225b8 Mon Sep 17 00:00:00 2001
+From: Sanchayan Maity <sanchayan@asymptotic.io>
+Date: Sun, 31 Jan 2021 22:00:36 +0530
+Subject: [PATCH 7/7] fdkaacenc: Add support for setting peak bitrate
+
+---
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.c | 30 ++++++++++++++++++-
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.h |  1 +
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/ext/fdkaac/gstfdkaacenc.c b/ext/fdkaac/gstfdkaacenc.c
+index de9c18612f..9c7c04317c 100644
+--- a/ext/fdkaac/gstfdkaacenc.c
++++ b/ext/fdkaac/gstfdkaacenc.c
+@@ -40,10 +40,12 @@ enum
+   PROP_AFTERBURNER,
+   PROP_BITRATE,
+   PROP_BITRATEMODE,
+-  PROP_HEADER_PERIOD
++  PROP_HEADER_PERIOD,
++  PROP_PEAK_BITRATE
+ };
+ 
+ #define DEFAULT_BITRATE (0)
++#define DEFAULT_PEAK_BITRATE (0)
+ 
+ #define SAMPLE_RATES " 8000, " \
+                     "11025, " \
+@@ -141,6 +143,9 @@ gst_fdkaacenc_set_property (GObject * object, guint prop_id,
+     case PROP_AFTERBURNER:
+       self->afterburner = g_value_get_boolean (value);
+       break;
++    case PROP_PEAK_BITRATE:
++      self->peak_bitrate = g_value_get_int (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -167,6 +172,9 @@ gst_fdkaacenc_get_property (GObject * object, guint prop_id,
+     case PROP_AFTERBURNER:
+       g_value_set_boolean (value, self->afterburner);
+       break;
++    case PROP_PEAK_BITRATE:
++      g_value_set_int (value, self->peak_bitrate);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -439,6 +447,17 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+     return FALSE;
+   }
+ 
++  if (self->peak_bitrate) {
++    if ((err = aacEncoder_SetParam (self->enc, AACENC_PEAK_BITRATE,
++                self->peak_bitrate)) != AACENC_OK) {
++      GST_ERROR_OBJECT (self, "Unable to set peak bitrate %d: %d",
++          self->peak_bitrate, err);
++      return FALSE;
++    }
++
++    GST_INFO_OBJECT (self, "Setting peak bitrate to %d", self->peak_bitrate);
++  }
++
+   if ((err =
+           aacEncoder_SetParam (self->enc, AACENC_HEADER_PERIOD,
+               self->header_period)) != AACENC_OK) {
+@@ -687,6 +706,7 @@ gst_fdkaacenc_init (GstFdkAacEnc * self)
+    */
+   self->header_period = 255;
+   self->afterburner = FALSE;
++  self->peak_bitrate = DEFAULT_PEAK_BITRATE;
+ 
+   gst_audio_encoder_set_drainable (GST_AUDIO_ENCODER (self), TRUE);
+ }
+@@ -716,6 +736,14 @@ gst_fdkaacenc_class_init (GstFdkAacEncClass * klass)
+           0, G_MAXINT, DEFAULT_BITRATE,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
++  g_object_class_install_property (object_class, PROP_PEAK_BITRATE,
++      g_param_spec_int ("peak-bitrate",
++          "Peak Bitrate",
++          "Peak Bitrate to adjust maximum bits per audio frame. "
++          "(0 = Not set)",
++          0, G_MAXINT, DEFAULT_PEAK_BITRATE,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
+   g_object_class_install_property (object_class, PROP_BITRATEMODE,
+       g_param_spec_enum ("bitrate-mode", "Bitrate Mode",
+           "AAC Bitrate configurations",
+diff --git a/ext/fdkaac/gstfdkaacenc.h b/ext/fdkaac/gstfdkaacenc.h
+index 6b24cf7bb4..6c3b3d7030 100644
+--- a/ext/fdkaac/gstfdkaacenc.h
++++ b/ext/fdkaac/gstfdkaacenc.h
+@@ -64,6 +64,7 @@ struct _GstFdkAacEnc {
+ 
+   GstAacBitrateMode bitrate_mode;
+   guint header_period;
++  guint peak_bitrate;
+   gboolean afterburner;
+ };
+ 
+-- 
+2.34.1
+

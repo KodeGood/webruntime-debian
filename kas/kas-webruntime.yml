@@ -1,0 +1,42 @@
+header:
+  version: 14
+
+build_system: isar
+
+repos:
+  webruntime-debian:
+
+  isar:
+    url: https://github.com/ilbers/isar
+    tag: v0.11
+    commit: f8558fcf3ecf98e58853b82d89645bcedb24b853
+    layers:
+      meta:
+
+bblayers_conf_header:
+  standard: |
+    LCONF_VERSION = "6"
+    BBPATH = "${TOPDIR}"
+    BBFILES ?= ""
+
+local_conf_header:
+  standard: |
+    CONF_VERSION = "1"
+  crossbuild: |
+    ISAR_CROSS_COMPILE = "1"
+    SDK_INCLUDE_ISAR_APT = "1"
+  ccache: |
+    USE_CCACHE = "1"
+  root_user: |
+    USERS += "root"
+    USER_root[password] = "root"
+    USER_root[flags] = "clear-text-password"
+    USER_root[shell] = "/bin/bash"
+  wayland_group: |
+    GROUPS += "wayland"
+    GROUP_wayland[flags] = "system"
+  webruntime_user: |
+    USERS += "webruntime"
+    USER_webruntime[groups] = "audio input render video wayland"
+    USER_webruntime[shell] = "/bin/bash"
+    USER_webruntime[flags] = "create-home"

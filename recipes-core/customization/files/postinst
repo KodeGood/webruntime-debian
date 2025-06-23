@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Allow ssh root login
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+echo "PermitEmptyPasswords yes" >> /etc/ssh/sshd_config
+
+# Show boot splash at least 5 seconds for demostration purposes
+echo "ExecStartPre=/usr/bin/sleep 5" >> /lib/systemd/system/plymouth-quit.service
+sed -i '/^#\[Daemon\]/ s/^#//' /etc/plymouth/plymouthd.conf
+sed -i 's/^#Theme=emerald/Theme=spinner/' /etc/plymouth/plymouthd.conf
+sed -i '/^\[boot-up\]/a Title=loading web runtime...' /usr/share/plymouth/themes/spinner/spinner.plymouth
+sed -i 's/^TitleVerticalAlignment=.*/TitleVerticalAlignment=.8/' /usr/share/plymouth/themes/spinner/spinner.plymouth
+
+systemctl enable systemd-networkd

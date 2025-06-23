@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,-O1 -Wl,-z,defs
+export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-Dgssapi=enabled \
+    -Dntlm=enabled \
+    -Dbrotli=enabled \
+    -Dtls_check=false \
+    -Dintrospection=disabled \
+    -Dvapi=disabled \
+    -Ddocs=disabled \
+		-Dautobahn=disabled \
+    -Dtests=false \
+		-Dinstalled_tests=false \
+		-Dsysprof=disabled \
+		-Dpkcs11_tests=disabled
+

@@ -1,0 +1,103 @@
+From 5d9cb2ecf129d9640cbb281e1bf8a42422e5ecc7 Mon Sep 17 00:00:00 2001
+From: Sanchayan Maity <sanchayan@asymptotic.io>
+Date: Mon, 18 Jan 2021 16:42:10 +0530
+Subject: [PATCH 3/7] fdkaac: Add support for LOAS
+
+---
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacdec.c   |  5 ++++-
+ .../gst-plugins-bad/ext/fdkaac/gstfdkaacenc.c   | 17 +++++++++++------
+ 2 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/ext/fdkaac/gstfdkaacdec.c b/ext/fdkaac/gstfdkaacdec.c
+index 7ecfd872fa..7dd0409758 100644
+--- a/ext/fdkaac/gstfdkaacdec.c
++++ b/ext/fdkaac/gstfdkaacdec.c
+@@ -48,7 +48,8 @@ static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink",
+         CHANNELS_CAPS_STR ";  "
+         "audio/mpeg, "
+         "mpegversion = (int) 4, "
+-        "stream-format = (string) { latm-mcp0, latm-mcp1 }, " CHANNELS_CAPS_STR)
++        "stream-format = (string) { latm-mcp0, latm-mcp1, loas }, "
++        CHANNELS_CAPS_STR)
+     );
+ 
+ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
+@@ -126,6 +127,8 @@ gst_fdkaacdec_set_format (GstAudioDecoder * dec, GstCaps * caps)
+     transport_format = TT_MP4_ADIF;
+   } else if (strcmp (stream_format, "adts") == 0) {
+     transport_format = TT_MP4_ADTS;
++  } else if (strcmp (stream_format, "loas") == 0) {
++    transport_format = TT_MP4_LOAS;
+   } else if (strcmp (stream_format, "latm-mcp0") == 0) {
+     transport_format = TT_MP4_LATM_MCP0;
+   } else if (strcmp (stream_format, "latm-mcp1") == 0) {
+diff --git a/ext/fdkaac/gstfdkaacenc.c b/ext/fdkaac/gstfdkaacenc.c
+index 437a4f4e8b..4865ed1bf0 100644
+--- a/ext/fdkaac/gstfdkaacenc.c
++++ b/ext/fdkaac/gstfdkaacenc.c
+@@ -33,7 +33,6 @@
+  * - Add support for other AOT / profiles
+  * - Expose more properties, e.g. afterburner and vbr
+  * - Signal encoder delay
+- * - LOAS / LATM support
+  */
+ 
+ enum
+@@ -74,7 +73,7 @@ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
+         "mpegversion = (int) 4, "
+         "rate = (int) { " SAMPLE_RATES " }, "
+         "channels = (int) {1, 2, 3, 4, 5, 6, 8}, "
+-        "stream-format = (string) { adts, adif, raw, latm-mcp0, latm-mcp1 }, "
++        "stream-format = (string) { adts, adif, raw, loas, latm-mcp0, latm-mcp1 }, "
+         "base-profile = (string) lc, " "framed = (boolean) true")
+     );
+ 
+@@ -232,6 +231,9 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+       } else if (strcmp (str, "raw") == 0) {
+         GST_DEBUG_OBJECT (self, "use RAW format for output");
+         transmux = 0;
++      } else if (strcmp (str, "loas") == 0) {
++        GST_DEBUG_OBJECT (self, "use LOAS format for output");
++        transmux = 10;
+       } else if (strcmp (str, "latm-mcp1") == 0) {
+         /*
+          * Enable TT_MP4_LATM_MCP1. Sets muxConfigPresent = 1. See Section 4.1 of
+@@ -424,7 +426,7 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+   } else if (transmux == 2) {
+     gst_caps_set_simple (src_caps, "stream-format", G_TYPE_STRING, "adts",
+         NULL);
+-  } else if (transmux == 6 || transmux == 7) {
++  } else if (transmux == 6 || transmux == 7 || transmux == 10) {
+     GstBitWriter bw;
+     guint rate = GST_AUDIO_INFO_RATE (info);
+     guint8 channels = GST_AUDIO_INFO_CHANNELS (info);
+@@ -456,20 +458,23 @@ gst_fdkaacenc_set_format (GstAudioEncoder * enc, GstAudioInfo * info)
+     if (transmux == 6)
+       gst_caps_set_simple (src_caps, "stream-format", G_TYPE_STRING,
+           "latm-mcp1", NULL);
+-    else
++    else if (transmux == 7)
+       gst_caps_set_simple (src_caps, "codec_data", GST_TYPE_BUFFER, codec_data,
+           "stream-format", G_TYPE_STRING, "latm-mcp0", NULL);
++    else
++      gst_caps_set_simple (src_caps, "stream-format", G_TYPE_STRING,
++          "loas", NULL);
+     gst_buffer_unref (codec_data);
+   } else {
+     g_assert_not_reached ();
+   }
+ 
+-  if (transmux != 6 && transmux != 7)
++  if (transmux != 6 && transmux != 7 && transmux != 10)
+     gst_codec_utils_aac_caps_set_level_and_profile (src_caps,
+         enc_info.confBuf, enc_info.confSize);
+   else
+     /*
+-     * For LATM, confBuf is StreamMuxConfig and not AudioSpecificConfig.
++     * For LATM/LOAS, confBuf is StreamMuxConfig and not AudioSpecificConfig.
+      * In this case, pass in the manually constructed AudioSpecificConfig
+      * buffer above.
+      */
+-- 
+2.34.1
+
