@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+EXTRA_CMAKE_ARGUMENTS = \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+  -DSIMDUTF_TESTS=OFF \
+  -DSIMDUTF_BENCHMARKS=OFF \
+  -DSIMDUTF_TOOLS=OFF
+
+%:
+	dh $@ --buildsystem=cmake+ninja
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(EXTRA_CMAKE_ARGUMENTS)
+

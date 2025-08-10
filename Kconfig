@@ -66,9 +66,15 @@ config WEBRUNTIME_WPEWEBKIT
   help
     WPEWebKit based webruntime.
 
+config WEBRUNTIME_LADYBIRD
+  bool "Ladybird"
+  help
+    Ladybird based webruntime.
+
 endchoice
 
 config KAS_INCLUDE_WEBRUNTIME
   string
   default "kas-wpewebkit.yml" if WEBRUNTIME_WPEWEBKIT
+  default "kas-ladybird.yml" if WEBRUNTIME_LADYBIRD
 

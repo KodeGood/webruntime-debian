@@ -1,0 +1,11 @@
+prefix=/usr
+libdir=${prefix}/lib/x86_64-linux-gnu
+includedir=${prefix}/include/angle
+
+Name: angle
+Description: A conformant OpenGL ES implementation for Windows, Mac, Linux, iOS and Android.
+URL: https://angleproject.org/
+Version: 7258
+Libs: -L${libdir} -lEGL -lGLESv2
+Cflags: -I${includedir}
+

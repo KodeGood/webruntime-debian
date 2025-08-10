@@ -1,0 +1,23 @@
+From a734ad81cfc9e217e1be393a2882875a8a96377d Mon Sep 17 00:00:00 2001
+From: Jani Hautakangas <jani@kodegood.com>
+Date: Fri, 11 Jul 2025 10:16:24 +0300
+Subject: [PATCH] Downgrade icu version requirement
+
+---
+ Libraries/LibUnicode/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Libraries/LibUnicode/CMakeLists.txt b/Libraries/LibUnicode/CMakeLists.txt
+index c791ecdb72..23b9d86e8a 100644
+--- a/Libraries/LibUnicode/CMakeLists.txt
++++ b/Libraries/LibUnicode/CMakeLists.txt
+@@ -23,5 +23,5 @@ set(GENERATED_SOURCES ${CURRENT_LIB_GENERATED})
+ 
+ ladybird_lib(LibUnicode unicode)
+ 
+-find_package(ICU 76 REQUIRED COMPONENTS data i18n uc)
++find_package(ICU 72 REQUIRED COMPONENTS data i18n uc)
+ target_link_libraries(LibUnicode PRIVATE ICU::i18n ICU::uc ICU::data)
+-- 
+2.48.1
+
