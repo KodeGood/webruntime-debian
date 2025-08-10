@@ -48,12 +48,17 @@ choice
 config DEBIAN_BOOKWORM
   bool "Bookworm (12)"
 
+config DEBIAN_TRIXIE
+  bool "Trixie (13)"
+
 endchoice
 
 config KAS_INCLUDE_DEBIAN
   string
   default "kas/opt/debian12.yml" if DEBIAN_BOOKWORM && !TARGET_RPI_5
+  default "kas/opt/debian13.yml" if DEBIAN_TRIXIE && !TARGET_RPI_5
   default "kas/opt/raspios-debian12.yml" if DEBIAN_BOOKWORM && TARGET_RPI_5
+  default "kas/opt/raspios-debian13.yml" if DEBIAN_TRIXIE && TARGET_RPI_5
 
 comment "Webruntime type options"
 

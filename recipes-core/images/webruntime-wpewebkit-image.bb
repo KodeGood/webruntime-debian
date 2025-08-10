@@ -46,4 +46,5 @@ IMAGE_INSTALL:append = " \
 
 IMAGE_PREINSTALL:append:amd64 = " gstreamer1.0-fdkaac"
 IMAGE_INSTALL:append:bookworm:arm64 = " gstreamer1.0-fdkaac"
+IMAGE_PREINSTALL:append:trixie:arm64 = " gstreamer1.0-fdkaac"
 
