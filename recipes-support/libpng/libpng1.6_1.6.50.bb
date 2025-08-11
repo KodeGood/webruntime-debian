@@ -14,7 +14,8 @@ PROVIDES = "libpng-apng"
 
 do_prepare_build[cleandirs] += "${S}/debian"
 do_prepare_build() {
-    cp -r ${WORKDIR}/debian-1.6.50 ${S}/debian
+    mkdir -p ${S}/debian
+    cp -r ${WORKDIR}/debian-1.6.50/. ${S}/debian/
     deb_add_changelog
 }
 
