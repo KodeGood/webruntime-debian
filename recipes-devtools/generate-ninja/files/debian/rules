@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+
+export DEB_CXXFLAGS_MAINT_APPEND = -Wno-error=maybe-uninitialized
+
+include /usr/share/dpkg/buildflags.mk
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+CXXFLAGS += $(CPPFLAGS) -fPIE
+LDFLAGS += -pie
+
+include /usr/share/dpkg/architecture.mk
+ifeq "$(DEB_HOST_ARCH)" "armel"
+LDFLAGS += -latomic
+endif
+
+#Needed by gn-describe when building outside git tree
+include /usr/share/dpkg/pkg-info.mk
+export DEB_VERSION_UPSTREAM
+
+#gn uses clang if CXX is not set
+DPKG_EXPORT_BUILDFLAGS := 1
+include /usr/share/dpkg/architecture.mk
+export CXX = $(DEB_HOST_GNU_TYPE)-g++
+export AR = $(DEB_HOST_GNU_TYPE)-ar
+
+%:
+	dh $@ --buildsystem=ninja --builddirectory=out
+
+override_dh_auto_configure:
+	python3 $(CURDIR)/build/gen.py
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	$(CURDIR)/out/gn_unittests
+endif
+
+override_dh_auto_install:
+	#noop
+

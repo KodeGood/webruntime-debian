@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+if git rev-parse --git-dir &>/dev/null ; then
+	git fetch --tags &>/dev/null  || true
+	upstream_tag=$(dpkg-parsechangelog --show-field Version | sed 's#-.*##' | tr '~' '_')
+	git describe upstream/${upstream_tag} --abbrev=12 --match initial-commit
+	exit 0
+fi
+
+echo $DEB_VERSION_UPSTREAM | sed 's#^.*\.#initial-commit-1000-g#'

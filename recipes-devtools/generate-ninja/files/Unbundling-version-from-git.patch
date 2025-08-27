@@ -1,0 +1,16 @@
+Unbundling version from git
+
+Forwarded: not-needed
+diff --git a/build/gen.py b/build/gen.py
+index fa23266c..794b4357 100755
+--- a/build/gen.py
++++ b/build/gen.py
+@@ -243,7 +243,7 @@ def is_gcc(cxx):
+ def GenerateLastCommitPosition(host, header):
+   ROOT_TAG = 'initial-commit'
+   describe_output = subprocess.check_output(
+-      ['git', 'describe', 'HEAD', '--abbrev=12', '--match', ROOT_TAG],
++      ['debian/gn-describe'],
+       shell=host.is_windows(), cwd=REPO_ROOT)
+   mo = re.match(ROOT_TAG + r'-(\d+)-g([0-9a-f]+)', describe_output.decode())
+   if not mo:

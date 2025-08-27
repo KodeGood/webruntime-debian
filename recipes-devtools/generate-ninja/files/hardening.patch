@@ -1,0 +1,15 @@
+Remove option incompatible with Debian hardening.
+
+Forwarded: not-needed
+diff --git a/build/gen.py b/build/gen.py
+index d1c649cb..96a83f75 100755
+--- a/build/gen.py
++++ b/build/gen.py
+@@ -515,7 +515,6 @@ def WriteGNNinja(path, platform, host, options, args_list):
+         '-Wno-implicit-fallthrough',
+         '-Wno-redundant-move',
+         '-Wno-unused-variable',
+-        '-Wno-format',             # Use of %llx, which is supported by _UCRT, false positive
+         '-Wno-strict-aliasing',    # Dereferencing punned pointer
+         '-Wno-cast-function-type', # Casting FARPROC to RegDeleteKeyExPtr
+       ])

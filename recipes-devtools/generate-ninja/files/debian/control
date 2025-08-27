@@ -1,0 +1,21 @@
+Source: generate-ninja
+Section: utils
+Priority: optional
+Maintainer: Jani Hautakangas <jani@kodegood.com>
+Build-Depends: debhelper-compat (= 13),
+               git,
+               ninja-build,
+               python3-all
+Standards-Version: 4.7.0
+Homepage: https://gn.googlesource.com/gn/
+Rules-Requires-Root: no
+
+Package: generate-ninja
+Architecture: amd64 arm64 armel armhf i386 kfreebsd-amd64 kfreebsd-i386 loong64 mips64el mipsel ppc64 ppc64el riscv64 s390x
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: gn
+Description: meta-build system for ninja
+ Generate-Ninja, or GN, is a meta-build system that generates Ninja
+ build files so that you can build your project with Ninja. GN was,
+ originally, part of the Chromium source tree, and has since been
+ extracted into its own standalone repo.
