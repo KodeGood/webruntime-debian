@@ -1,0 +1,45 @@
+Source: skia
+Section: libs
+Priority: optional
+Maintainer: Jani Hautakangas <jani@kodegood.com>
+Build-Depends: debhelper-compat (= 13),
+               generate-ninja,
+               libfontconfig-dev,
+               libgl1-mesa-dev,
+               libharfbuzz-dev,
+               libjpeg62-turbo-dev,
+               libvulkan-dev,
+               libvulkan-memory-allocator-dev,
+               libwebp-dev,
+               ninja-build,
+               pkgconf
+Standards-Version: 4.7.0
+Homepage: https://skia.googlesource.com/skia
+Rules-Requires-Root: no
+
+Package: libskia-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libfontconfig-dev,
+         libgl1-mesa-dev,
+         libharfbuzz-dev,
+         libjpeg62-turbo-dev,
+         libvulkan-dev,
+         libvulkan-memory-allocator-dev,
+         libwebp-dev,
+         libskia (= ${binary:Version}),
+         ${misc:Depends}
+Description: Skia 2D graphics library (development files)
+ Development headers and ancillary files for building against Skia.
+ Installs Skia headers under /usr/include/skia/.
+
+Package: libskia
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Skia 2D graphics library (shared library)
+ Skia is a complete 2D graphic library for drawing text, geometries, and images.
+ This package contains the shared library.
+

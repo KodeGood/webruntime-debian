@@ -1,0 +1,125 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/architecture.mk
+include /usr/share/dpkg/buildflags.mk
+include /usr/share/dpkg/buildtools.mk
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# Debian arch info (works in native & cross builds)
+# DEB_HOST_ARCH       ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+# DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+# DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+# DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+# Map Debian arch -> GN cpu
+ifeq ($(DEB_HOST_ARCH),amd64)
+  GN_CPU := "x64"
+else ifeq ($(DEB_HOST_ARCH),arm64)
+  GN_CPU := "arm64"
+else ifeq ($(DEB_HOST_ARCH),armhf)
+  GN_CPU := "arm"
+else ifeq ($(DEB_HOST_ARCH),i386)
+  GN_CPU := "x86"
+else
+  GN_CPU := "$(DEB_HOST_ARCH)"
+endif
+
+# If cross-building, switch to the target-prefixed GCC toolchain
+# ifneq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+#   export CC    = $(DEB_HOST_GNU_TYPE)-gcc
+#   export CXX   = $(DEB_HOST_GNU_TYPE)-g++
+#   export AR    = $(DEB_HOST_GNU_TYPE)-ar
+#   export NM    = $(DEB_HOST_GNU_TYPE)-nm
+#   export STRIP = $(DEB_HOST_GNU_TYPE)-strip
+# endif
+
+GN_EXTRA_ARGS = \
+	cc = "$(DEB_HOST_GNU_TYPE)-gcc" \
+	cxx = "$(DEB_HOST_GNU_TYPE)-g++" \
+	target_cpu=$(GN_CPU) \
+	is_official_build=true \
+	is_component_build=true \
+	is_debug=false \
+	skia_use_dng_sdk=false \
+	skia_use_wuffs=false \
+	skia_use_zlib=true \
+	skia_use_system_zlib=true \
+	skia_use_harfbuzz=true \
+	skia_use_vulkan=true \
+	skia_use_fontconfig=true \
+	skia_use_icu=true \
+	skia_use_system_icu=true \
+	extra_cflags=["-Wno-psabi","-isystem","/usr/include/$(DEB_HOST_MULTIARCH)"] \
+	extra_cflags_cc=["-DSKCMS_API=__attribute__((visibility(\"default\")))"] \
+	extra_ldflags=[ \
+    "-L/usr/lib/$(DEB_HOST_MULTIARCH)", \
+    "-Wl,-rpath-link,/usr/lib/$(DEB_HOST_MULTIARCH)", \
+    "-Wl,-rpath-link,/lib/$(DEB_HOST_MULTIARCH)" \
+  ]
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	gn gen out --args='${GN_EXTRA_ARGS}'
+
+override_dh_auto_build:
+	ninja -C out :skia :modules
+
+override_dh_auto_install:
+	install -d debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig
+	install -d debian/tmp/usr/include/skia
+
+	# Libraries
+	# (Some builds emit multiple .so/.a; we'll stage generically.)
+	if ls out/*.so >/dev/null 2>&1; then \
+		install -m 0644 out/*.so debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/; \
+	fi
+	if ls out/*.a >/dev/null 2>&1; then \
+		install -m 0644 out/*.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/; \
+	fi
+
+	# Headers (include/ and modules/)
+	find include -name '*.h' -exec sh -c \
+		'install -Dm644 "$$0" "debian/tmp/usr/include/skia/$${0#include/}"' {} \;
+	find modules -name '*.h' -exec sh -c \
+		'install -Dm644 "$$0" "debian/tmp/usr/include/skia/modules/$${0#modules/}"' {} \;
+
+	# pkg-config
+	if [ -f skia.pc ]; then \
+		install -m 0644 skia.pc debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/skia.pc; \
+	fi
+
+	# --- Patch Skia self-includes in the staged headers (post-install) ---
+	@set -e; \
+	HDR_ROOT="debian/tmp/usr/include/skia"; \
+	if [ -d "$$HDR_ROOT" ]; then \
+	  echo "Patching Skia headers under $$HDR_ROOT"; \
+	  grep -RIl --include="*.h" --include="*.hpp" '#include "include/' "$$HDR_ROOT" | \
+	    xargs -r sed -i 's|#include "include/|#include "|g'; \
+	else \
+	  echo "WARN: $$HDR_ROOT not found; nothing to patch."; \
+	fi
+
+# override_dh_install:
+# 	dh_install
+#
+# 	install -d debian/skia/usr/lib/${DEB_TARGET_GNU_TYPE}/pkgconfig
+# 	install -m 0644 skia.pc debian/skia/usr/lib/${DEB_TARGET_GNU_TYPE}/pkgconfig/skia.pc
+#
+#   # Install libs
+# 	for path in out/*.a out/*.so; do \
+# 		install -m644 "$$path" debian/skia/usr/lib/${DEB_TARGET_GNU_TYPE}/; \
+# 	done
+#
+# 	install -d debian/skia/usr/include/skia/modules
+#
+# 	# Install headers from include/
+# 	find include -name '*.h' -exec sh -c \
+# 		'install -Dm644 "$$0" "debian/skia/usr/include/skia/$${0#include/}"' {} \;
+#
+# 	# Install headers from modules/
+# 	find modules -name '*.h' -exec sh -c \
+# 		'install -Dm644 "$$0" "debian/skia/usr/include/skia/modules/$${0#modules/}"' {} \;
+#
