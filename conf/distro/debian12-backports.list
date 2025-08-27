@@ -1,2 +1,2 @@
 deb http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
-deb-src http://deb.debian.org/debian bookworm-backports main contrib non-free non-free-firmware
+deb https://kodegood.github.io/debian-backports bookworm main
