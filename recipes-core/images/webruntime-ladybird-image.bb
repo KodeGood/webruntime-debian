@@ -13,6 +13,7 @@ IMAGE_PREINSTALL += " \
     libpam-systemd \
     lshw \
     lsb-release \
+    mesa-vulkan-drivers \
     ntpsec \
     openssh-server \
     plymouth \
