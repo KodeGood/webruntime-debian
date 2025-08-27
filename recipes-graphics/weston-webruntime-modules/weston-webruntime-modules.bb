@@ -5,7 +5,7 @@ DESCRIPTION = "Weston Webruntime Modules"
 SRC_URI = "git://git@github.com/zhani/weston-webruntime-modules.git;protocol=https;branch=main; \
             file://assets \
             file://rules"
-SRCREV = "803b23b4bd392f77aa835c2d2f4d30e9828ecfe3"
+SRCREV = "a666c7bb8fdc39bbb7ed1277589cb488c7f78e11"
 
 S = "${WORKDIR}/git"
 
