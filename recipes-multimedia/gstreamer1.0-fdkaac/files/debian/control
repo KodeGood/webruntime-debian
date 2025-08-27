@@ -12,6 +12,7 @@ Build-Depends: debhelper,
                libglib2.0-dev (>= 2.56),
                libgstreamer1.0-dev (>= 1.20.0),
                libgstreamer-plugins-base1.0-dev (>= 1.20.0),
+               libpng-dev,
                gstreamer1.0-plugins-base (>= 1.20.0),
                gstreamer1.0-plugins-good (>= 1.20.0),
                libfdk-aac-dev [amd64 arm64 armel armhf i386 mips64el mipsel ppc64el s390x]

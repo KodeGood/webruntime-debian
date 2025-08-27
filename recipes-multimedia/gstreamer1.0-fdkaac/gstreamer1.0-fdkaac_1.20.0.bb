@@ -15,13 +15,8 @@ SRC_URI = "https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad
     file://debian"
 SRC_URI[gst-plugins-bad.sha256sum] = "015b8d4d9a395ebf444d40876867a2034dd3304b3ad48bc3a0dd0c1ee71dc11d"
 
-DEBIAN_DEPENDS =. "\${shlibs:Depends}, \${misc:Depends},"
-
-DEBIAN_BUILD_DEPENDS = " \
-    meson"
-
 do_prepare_build[cleandirs] += "${S}/debian"
 do_prepare_build() {
-    cp -r ${WORKDIR}/debian ${S}
+    cp -r ${WORKDIR}/debian ${S}/
     deb_add_changelog
 }
