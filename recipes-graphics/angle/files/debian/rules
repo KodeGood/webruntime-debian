@@ -1,0 +1,79 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/architecture.mk
+include /usr/share/dpkg/buildflags.mk
+include /usr/share/dpkg/buildtools.mk
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+export CC       = clang-20
+export CXX      = clang++-20
+export LD       = lld-20
+export AR       = llvm-ar-20
+export NM       = llvm-nm-20
+export RANLIB   = llvm-ranlib-20
+
+export DEB_CXXFLAGS_MAINT_APPEND = \
+  -Wno-error=shift-count-overflow \
+  -Wno-error=parentheses \
+  -Wno-error=unused-but-set-variable
+
+export PKG_CONFIG_LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig
+
+# Map Debian arch -> GN cpu
+ifeq ($(DEB_HOST_ARCH),amd64)
+  GN_CPU := "x64"
+else ifeq ($(DEB_HOST_ARCH),arm64)
+  GN_CPU := "arm64"
+else ifeq ($(DEB_HOST_ARCH),armhf)
+  GN_CPU := "arm"
+else ifeq ($(DEB_HOST_ARCH),i386)
+  GN_CPU := "x86"
+else
+  GN_CPU := "$(DEB_HOST_ARCH)"
+endif
+
+CLANG_TARGET := $(DEB_HOST_GNU_TYPE)
+CLANG_VERSION = 20
+CLANG_BASE_PATH := "/usr/lib/llvm-$(CLANG_VERSION)"
+
+GN_EXTRA_ARGS = \
+  target_cpu=$(GN_CPU) \
+  is_official_build=true \
+  is_component_build=true \
+  is_clang=true \
+  is_debug=false \
+  angle_build_tests=false \
+  angle_enable_renderdoc=false \
+  angle_enable_swiftshader=false \
+  angle_enable_vulkan=true \
+  angle_enable_wgpu=false \
+  angle_expose_non_conformant_extensions_and_versions=true \
+  angle_use_wayland=true \
+  angle_use_x11=false \
+  build_angle_deqp_tests=false \
+  use_custom_libcxx=false \
+  use_safe_libstdcxx=true \
+  chrome_pgo_phase=0 \
+  build_with_chromium=false \
+  is_cfi=false \
+	clang_base_path=$(CLANG_BASE_PATH) \
+	clang_version=$(CLANG_VERSION) \
+	use_sysroot=false \
+	treat_warnings_as_errors=false	
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	gn gen out --args='${GN_EXTRA_ARGS}'
+
+override_dh_auto_build:
+	ninja -C out
+
+override_dh_install:
+	dh_install
+
+override_dh_dwz:
+	# Skip dwz due to DWARF5 sections produced by Clang
+	true

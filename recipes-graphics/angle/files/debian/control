@@ -1,0 +1,54 @@
+Source: angle
+Section: libs
+Priority: optional
+Maintainer: Jani Hautakangas <jani@kodegood.com>
+Build-Depends: debhelper-compat (= 13),
+               generate-ninja,
+               libgl1-mesa-dev,
+               libglib2.0-dev,
+               libpci-dev,
+               libwayland-dev,
+               ninja-build,
+               pkgconf
+Standards-Version: 4.7.0
+Homepage: https://chromium.googlesource.com/angle/angle
+Rules-Requires-Root: no
+
+Package: libangle-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libgl1-mesa-dev,
+         libglib2.0-dev,
+         libpci-dev,
+         libwayland-dev,
+         zlib1g-dev,
+         libangle (= ${binary:Version}),
+         ${misc:Depends}
+Recommends: pkg-config
+Description: Development files for ANGLE (EGL/GLES)
+ Development files for building against ANGLE’s EGL/GLES libraries.
+ Installs linker symlinks, pkg-config files, and (optionally) ANGLE-
+ specific headers under a vendor prefix to avoid conflicts.
+ .
+ Contains:
+  - libEGL.so, libGLESv2.so (linker symlinks)
+  - pkg-config file (angle.pc)
+  - headers under /usr/include/angle/ (if you ship any)
+
+Package: libangle
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ANGLE EGL/GLES runtime libraries (parallel install)
+ ANGLE provides EGL and OpenGL ES implementations layered over
+ other backends (e.g. Vulkan, D3D). This package installs ANGLE’s
+ runtime shared libraries in a non-default location so they can
+ coexist with Debian’s system libEGL/libGLES without conflicts.
+ .
+ Contains:
+  - libEGL.so.* 
+  - libGLESv2.so.*
+ installed under /usr/lib/<triplet>/angle/.
+

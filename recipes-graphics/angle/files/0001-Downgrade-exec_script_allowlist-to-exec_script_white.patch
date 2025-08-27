@@ -1,0 +1,53 @@
+From 7859ecdbff8e48e7a3c9446cb294d7da9d29de80 Mon Sep 17 00:00:00 2001
+From: Jani Hautakangas <jani@kodegood.com>
+Date: Fri, 15 Aug 2025 09:10:34 +0300
+Subject: [PATCH] Downgrade exec_script_allowlist to exec_script_whitelist
+
+---
+ .gn                        | 4 ++--
+ build/dotfile_settings.gni | 2 +-
+ dotfile_settings.gni       | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/.gn b/.gn
+index dc3df25a1b..9a48f99a83 100644
+--- a/.gn
++++ b/.gn
+@@ -26,8 +26,8 @@ script_executable = "python3"
+ # These are the list of GN files that run exec_script. This allowlist exists
+ # to force additional review for new uses of exec_script, which is strongly
+ # discouraged except for gypi_to_gn calls.
+-exec_script_allowlist = angle_dotfile_settings.exec_script_allowlist +
+-                        build_dotfile_settings.exec_script_allowlist +
++exec_script_whitelist = angle_dotfile_settings.exec_script_whitelist +
++                        build_dotfile_settings.exec_script_whitelist +
+                         [
+                           "//build/config/sysroot.gni",
+                           "//build/config/win/BUILD.gn",
+diff --git a/build/dotfile_settings.gni b/build/dotfile_settings.gni
+index 4b8d16a5d5..55716eda6b 100644
+--- a/build/dotfile_settings.gni
++++ b/build/dotfile_settings.gni
+@@ -6,7 +6,7 @@
+ # to make it easier to roll new versions of //build in.
+ 
+ build_dotfile_settings = {
+-  exec_script_allowlist = [
++  exec_script_whitelist = [
+     "//build/config/android/rules.gni",
+     "//build/config/apple/mobile_config.gni",
+     "//build/config/chromeos/rules.gni",
+diff --git a/dotfile_settings.gni b/dotfile_settings.gni
+index d27fae199a..d42beef6fe 100644
+--- a/dotfile_settings.gni
++++ b/dotfile_settings.gni
+@@ -6,5 +6,5 @@
+ # to make it easier to roll new versions of ANGLE in.
+ 
+ angle_dotfile_settings = {
+-  exec_script_allowlist = [ get_path_info("BUILD.gn", "abspath") ]
++  exec_script_whitelist = [ get_path_info("BUILD.gn", "abspath") ]
+ }
+-- 
+2.43.0
+
