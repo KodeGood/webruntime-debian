@@ -10,10 +10,6 @@ SRC_URI = "https://download.gnome.org/sources/libsoup/${SHRT_VER}/libsoup-${PV}.
     file://debian"
 SRC_URI[libsoup.sha256sum] = "6891765aac3e949017945c3eaebd8cc8216df772456dc9f460976fbdb7ada234"
 
-# DEBIAN_DEPENDS =. "\${shlibs:Depends}, \${misc:Depends},"
-
-#PROVIDES = "libsoup-3.0, libsoup-3.0-common, libsoup-3.0-dev"
-
 do_prepare_build[cleandirs] += "${S}/debian"
 do_prepare_build() {
     cp -r ${WORKDIR}/debian ${S}
