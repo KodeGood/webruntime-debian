@@ -9,7 +9,12 @@ SRCREV = "803b23b4bd392f77aa835c2d2f4d30e9828ecfe3"
 
 S = "${WORKDIR}/git"
 
-DEBIAN_BUILD_DEPENDS = "cmake, libcairo2-dev, pkgconf, weston-dev"
+DEBIAN_DEPENDS =. "\${shlibs:Depends}, \${misc:Depends}"
+DEBIAN_BUILD_DEPENDS = " \
+    cmake, \
+    libcairo2-dev, \
+    pkgconf, \
+    weston-dev"
 
 do_prepare_build[cleandirs] += "${S}/debian"
 do_prepare_build[cleandirs] += "${S}/assets"
