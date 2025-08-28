@@ -1,12 +1,34 @@
 #!/usr/bin/make -f
 
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
-
 include /usr/share/dpkg/architecture.mk
 include /usr/share/dpkg/buildflags.mk
 
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
+
+export PKG_CONFIG_LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig
+
+export TARGET := ${DEB_HOST_MULTIARCH}
+
+EXTRA_CMAKE_ARGUMENTS += \
+		-DCMAKE_C_COMPILER_TARGET=$(TARGET) \
+		-DCMAKE_CXX_COMPILER_TARGET=$(TARGET)
+
+
+export CC       = clang-20
+export CXX      = clang++-20
+export LD       = lld-20
+export AR       = llvm-ar-20
+export NM       = llvm-nm-20
+export RANLIB   = llvm-ranlib-20
+
 %:
 	dh $@ --buildsystem=cmake+ninja
+
+# override_dh_auto_configure:
+# 	dh_auto_configure
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(EXTRA_CMAKE_ARGUMENTS)
 
 override_dh_auto_test:
 

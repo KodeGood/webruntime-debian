@@ -1,23 +1,39 @@
-From a734ad81cfc9e217e1be393a2882875a8a96377d Mon Sep 17 00:00:00 2001
+From 3ee043f86e028c0e82b1457fa254cb47c47c39b6 Mon Sep 17 00:00:00 2001
 From: Jani Hautakangas <jani@kodegood.com>
 Date: Fri, 11 Jul 2025 10:16:24 +0300
-Subject: [PATCH] Downgrade icu version requirement
+Subject: [PATCH 1/4] Downgrade icu version requirement
 
 ---
  Libraries/LibUnicode/CMakeLists.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Libraries/LibUnicode/TimeZone.cpp   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/Libraries/LibUnicode/CMakeLists.txt b/Libraries/LibUnicode/CMakeLists.txt
-index c791ecdb72..23b9d86e8a 100644
+index ca1d39d7b9..8d48871731 100644
 --- a/Libraries/LibUnicode/CMakeLists.txt
 +++ b/Libraries/LibUnicode/CMakeLists.txt
-@@ -23,5 +23,5 @@ set(GENERATED_SOURCES ${CURRENT_LIB_GENERATED})
+@@ -24,7 +24,7 @@ set(GENERATED_SOURCES ${CURRENT_LIB_GENERATED})
  
  ladybird_lib(LibUnicode unicode)
  
 -find_package(ICU 76 REQUIRED COMPONENTS data i18n uc)
 +find_package(ICU 72 REQUIRED COMPONENTS data i18n uc)
  target_link_libraries(LibUnicode PRIVATE ICU::i18n ICU::uc ICU::data)
+ 
+ # FIXME: Add support for building LibGfx in sanitize
+diff --git a/Libraries/LibUnicode/TimeZone.cpp b/Libraries/LibUnicode/TimeZone.cpp
+index ac84034ef0..6efe99d249 100644
+--- a/Libraries/LibUnicode/TimeZone.cpp
++++ b/Libraries/LibUnicode/TimeZone.cpp
+@@ -132,7 +132,7 @@ Optional<String> resolve_primary_time_zone(StringView time_zone)
+     UErrorCode status = U_ZERO_ERROR;
+ 
+     icu::UnicodeString iana_id;
+-    icu::TimeZone::getIanaID(icu_string(time_zone), iana_id, status);
++    icu::TimeZone::getCanonicalID(icu_string(time_zone), iana_id, status);
+ 
+     if (icu_failure(status))
+         return {};
 -- 
 2.48.1
 

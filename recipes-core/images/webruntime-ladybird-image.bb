@@ -27,6 +27,7 @@ IMAGE_PREINSTALL += " \
 
 IMAGE_INSTALL += " \
     customization \
+    customization-ladybird \
     expand-on-first-boot \
     sshd-regen-keys \
     weston-init \

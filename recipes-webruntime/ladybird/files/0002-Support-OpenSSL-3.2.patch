@@ -1,0 +1,44 @@
+From 72418ac522dcb6f77ee36403c45c093ff6082dca Mon Sep 17 00:00:00 2001
+From: Jani Hautakangas <jani@kodegood.com>
+Date: Sun, 17 Aug 2025 17:21:28 +0300
+Subject: [PATCH 2/4] Support OpenSSL < 3.2
+
+---
+ Libraries/LibCrypto/Curves/EdwardsCurve.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/Libraries/LibCrypto/Curves/EdwardsCurve.cpp b/Libraries/LibCrypto/Curves/EdwardsCurve.cpp
+index 45e593738a..8b03d1b6db 100644
+--- a/Libraries/LibCrypto/Curves/EdwardsCurve.cpp
++++ b/Libraries/LibCrypto/Curves/EdwardsCurve.cpp
+@@ -66,9 +66,13 @@ ErrorOr<ByteBuffer> SignatureEdwardsCurve::sign(ReadonlyBytes private_key, Reado
+         OSSL_PARAM_END
+     };
+ 
++#ifdef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
+     if (!context.is_null()) {
+         params[0] = OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, const_cast<u8*>(context.data()), context.size());
+     }
++#else
++    (void)context; // avoid -Wunused-parameter when building without ctx support
++#endif
+ 
+     OPENSSL_TRY(EVP_DigestSignInit_ex(ctx.ptr(), nullptr, nullptr, nullptr, nullptr, key.ptr(), params));
+ 
+@@ -151,9 +155,13 @@ ErrorOr<bool> SignatureEdwardsCurve::verify(ReadonlyBytes public_key, ReadonlyBy
+         OSSL_PARAM_END
+     };
+ 
++#ifdef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
+     if (!context.is_null()) {
+         params[0] = OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, const_cast<u8*>(context.data()), context.size());
+     }
++#else
++    (void)context; // avoid -Wunused-parameter when building without ctx support
++#endif
+ 
+     OPENSSL_TRY(EVP_DigestVerifyInit_ex(ctx.ptr(), nullptr, nullptr, nullptr, nullptr, key.ptr(), params));
+ 
+-- 
+2.48.1
+

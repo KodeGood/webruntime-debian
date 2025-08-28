@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Big Buck Bunny</title>
+</head>
+<body>
+  <video id="bbbVideo" src="/usr/share/ladybird/bbb.ogg" width="1920" autoplay muted playsinline loop />
+
+  <style>
+    #bbbVideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;   /* viewport width */
+      height: 100vh;  /* viewport height */
+      object-fit: cover; /* zoom/crop to fill */
+      z-index: -1;   /* push behind other content */
+    }
+  </style>
+
+</body>
+</html>
