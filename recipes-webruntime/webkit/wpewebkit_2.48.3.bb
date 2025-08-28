@@ -11,8 +11,8 @@ SRC_URI += "file://0002-WPE-Build-fix-when-SYSPROF_CAPTURE-is-disabled.patch"
 
 BINDIR = "${bindir}"
 
-DEPENDS += "libsoup3"
-DEBIAN_DEPENDS =. "\${shlibs:Depends}, \${misc:Depends},"
+DEPENDS += " libsoup3"
+DEBIAN_DEPENDS =. "\${shlibs:Depends}, \${misc:Depends}"
 
 DEBIAN_BUILD_DEPENDS = " \
     bubblewrap, \

@@ -9,6 +9,8 @@ SRC_URI = " \
     file://webruntime-app-aquarium.png \
     file://webruntime-app-bigbuckbunny.png \
     file://webruntime-app-duckduckgo.png \
+    file://webruntime-app-motionmark.png \
+    file://webruntime-app-useragent.png \
     file://webruntime-logo-wpe.png \
     file://webruntime-splash-wpe.png \
     file://weston-wpewebkit.ini.tmpl"
