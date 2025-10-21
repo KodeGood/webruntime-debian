@@ -3,6 +3,7 @@
 **Blog Posts (Full Story & Details):**
 
 [Build Embedded Debian Web Runtime with the Power of Isar](https://medium.com/kodegood/build-embedded-debian-web-runtime-with-the-power-of-isar-d82df0a91ae2)
+
 [Ladybird Browser in an Embedded Web Runtime](https://medium.com/kodegood/ladybird-browser-in-an-embedded-web-runtime-46308082af4a)
 
 ## Prerequisites
